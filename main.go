@@ -42,12 +42,26 @@ func AllowOnlyGET(next http.Handler) http.Handler {
 	})
 }
 
+func Authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		isValid := (username == "benzion") && (password == "yehezkel")
+		if !ok || !isValid {
+			http.Error(w, "Wrong username or password!", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	mux := new(CustomMux)
 	mux.HandleFunc("/", ShowIndex)
 
 	var handler http.Handler = mux
 	mux.RegisterMiddleware(AllowOnlyGET)
+	mux.RegisterMiddleware(Authenticate)
 
 	server := new(http.Server)
 	server.Addr = ":3000"
